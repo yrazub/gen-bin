@@ -1,0 +1,48 @@
+name: Validate marketplace
+
+# No `paths:` filter on purpose: the repository is small, and a path filter can leave a
+# required check waiting forever on a PR that touches only unfiltered files.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install Claude Code CLI
+        run: npm install --global @anthropic-ai/claude-code@2.1.306
+
+      # TODO: add --strict once the first plugin is published; with an empty catalog the
+      # "Marketplace has no plugins defined" warning would fail every run.
+      - name: Validate catalog
+        run: claude plugin validate .
+
+      - name: Validate each plugin
+        run: |
+          shopt -s nullglob
+          for dir in plugins/*/; do
+            claude plugin validate "$dir"
+          done
+
+      - name: Check version bumps
+        env:
+          BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: |
+          if [ "$BASE_REF" = "0000000000000000000000000000000000000000" ]; then
+            echo "New branch push, nothing to compare."
+            exit 0
+          fi
+          node .github/scripts/check-version-bump.mjs "$BASE_REF"

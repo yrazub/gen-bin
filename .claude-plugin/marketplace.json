@@ -1,0 +1,10 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "gen-bin",
+  "description": "Skills and agents for spec-driven development with Claude Code, extracted from DevDigest",
+  "owner": {
+    "name": "Iurii Razubaiev",
+    "url": "https://github.com/yrazub"
+  },
+  "plugins": []
+}
