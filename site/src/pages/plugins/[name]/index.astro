@@ -137,7 +137,7 @@ const releases = catalog.releases.filter((r) => r.plugin === plugin.name);
                   <h3>
                     <code>{r.version}</code> <span class="date">{releaseDate(r)}</span>
                   </h3>
-                  <div class="readme" set:html={releaseHtml(r, sha, 3)} />
+                  <div class="readme" set:html={releaseHtml(r, sha, 1)} />
                 </article>
               ))}
               <p><a href={url('whats-new/')}>All releases</a></p>

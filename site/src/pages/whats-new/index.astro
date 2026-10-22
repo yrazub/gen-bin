@@ -1,0 +1,166 @@
+---
+import Base from '../../layouts/Base.astro';
+import CopyCommand from '../../components/CopyCommand.astro';
+import { loadCatalog } from '../../lib/catalog';
+import { MARKETPLACE } from '../../lib/constants';
+import { releaseHtml } from '../../lib/releases';
+import { commitSha } from '../../lib/repo';
+import { url } from '../../lib/url';
+
+const catalog = loadCatalog();
+const sha = commitSha();
+const known = new Set(catalog.plugins.map((p) => p.name));
+
+// Releases are newest first, so the first one seen for a plugin is its latest.
+const seen = new Set<string>();
+const releases = catalog.releases.map((r) => {
+  const latest = !seen.has(r.plugin);
+  seen.add(r.plugin);
+  return { r, latest, html: releaseHtml(r, sha, 0) };
+});
+
+const format = (date: string) =>
+  new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
+---
+
+<Base title="What's new · gen-bin" description="Release notes for the gen-bin plugins" current="whats-new">
+  <h1>What's new</h1>
+  <p class="intro">
+    Auto-update is off by default for third-party marketplaces, so you won't hear about a new version unless you look.
+    Check here, or subscribe to the feed.
+  </p>
+  <p>
+    <a class="button" href={url('rss.xml')}>Subscribe via RSS</a>
+  </p>
+
+  <div class="hint">
+    <p>To pick up new versions in Claude Code, run:</p>
+    <CopyCommand command={`/plugin marketplace update ${MARKETPLACE}`} label="update command" />
+  </div>
+
+  {
+    releases.length === 0 ? (
+      <section class="empty">
+        <h2>No releases yet</h2>
+        <p>The first release will appear here.</p>
+      </section>
+    ) : (
+      <ol class="releases">
+        {releases.map(({ r, latest, html }) => (
+          <li class="release">
+            <div class="when">
+              {r.date ? <time datetime={r.date}>{format(r.date)}</time> : <span>Unreleased</span>}
+            </div>
+            <article>
+              <h2>
+                {known.has(r.plugin) ? <a href={url(`plugins/${r.plugin}/`)}>{r.plugin}</a> : <span>{r.plugin}</span>}
+                <code>{r.version}</code>
+                {latest && <span class="latest">Latest</span>}
+              </h2>
+              <div class="notes" set:html={html} />
+            </article>
+          </li>
+        ))}
+      </ol>
+    )
+  }
+</Base>
+
+<style>
+  .intro {
+    max-width: 760px;
+    color: var(--muted);
+  }
+  .button {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--target);
+    padding: 0 var(--space-4);
+    background: var(--btn);
+    color: var(--btnFg);
+    border-radius: var(--radius-control);
+    text-decoration: none;
+  }
+  .hint {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin: var(--space-4) 0 var(--space-6);
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+  }
+  .hint p {
+    margin: 0;
+    font-size: 15px;
+  }
+  .hint :global(.copy) {
+    flex: 1 1 320px;
+  }
+  .releases {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .release {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-5);
+    padding: var(--space-5) 0;
+    border-top: 1px solid var(--border);
+  }
+  .when {
+    flex: 0 0 140px;
+    color: var(--muted);
+    font-size: 14px;
+    padding-top: 4px;
+  }
+  article {
+    flex: 1 1 min(420px, 100%);
+    min-width: 0;
+  }
+  h2 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-2);
+    font-size: 20px;
+  }
+  h2 code {
+    font: 14px var(--font-mono);
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .latest {
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--badge-skill-bg);
+    color: var(--badge-skill-fg);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 20px;
+  }
+  .notes {
+    overflow-wrap: anywhere;
+  }
+  .notes :global(h3) {
+    font-size: 15px;
+    margin: var(--space-3) 0 var(--space-1);
+  }
+  .notes :global(ul) {
+    margin: 0;
+    padding-left: var(--space-5);
+  }
+  .notes :global(code) {
+    font: 13px var(--font-mono);
+  }
+  .empty {
+    padding: var(--space-6) var(--space-4);
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-card);
+  }
+</style>

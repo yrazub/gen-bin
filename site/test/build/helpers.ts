@@ -13,16 +13,19 @@ function childEnv(): NodeJS.ProcessEnv {
   return env;
 }
 
-/** Builds the site against a fixture marketplace into a temp dir and returns that dir. */
-export function buildFixture(name: string): string {
-  const out = mkdtempSync(join(tmpdir(), `site-${name}-`));
+/** Builds the site against the marketplace at `root` into a temp dir and returns that dir. */
+export function buildFrom(root: string, label: string): string {
+  const out = mkdtempSync(join(tmpdir(), `site-${label}-`));
   execFileSync(join(siteRoot, 'node_modules/.bin/astro'), ['build', '--outDir', out], {
     cwd: siteRoot,
-    env: { ...childEnv(), CATALOG_ROOT: join(siteRoot, 'test/fixtures', name) },
+    env: { ...childEnv(), CATALOG_ROOT: root },
     stdio: 'pipe',
   });
   return out;
 }
+
+/** Builds the site against a fixture marketplace. */
+export const buildFixture = (name: string): string => buildFrom(join(siteRoot, 'test/fixtures', name), name);
 
 export interface Dist {
   dir: string;
