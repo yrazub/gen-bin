@@ -1,0 +1,105 @@
+---
+import ThemeControl from './ThemeControl.astro';
+import { url } from '../lib/url';
+import { REPO_URL } from '../lib/repo';
+
+interface Props {
+  current?: 'search' | 'whats-new' | 'team';
+}
+const { current } = Astro.props;
+const nav = [
+  { id: 'search', label: 'Search', href: url() },
+  { id: 'whats-new', label: "What's new", href: url('whats-new/') },
+  { id: 'team', label: 'Team setup', href: url('team/') },
+] as const;
+---
+
+<header class="site-header">
+  <div class="inner">
+    <a class="logo" href={url()}>
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v8" />
+      </svg>
+      <span>gen-bin</span>
+    </a>
+    <p class="tagline">Claude Code plugin marketplace</p>
+    <nav aria-label="Main">
+      {
+        nav.map((n) => (
+          <a href={n.href} aria-current={current === n.id ? 'page' : undefined}>
+            {n.label}
+            {n.id === 'team' && <span class="count" data-team-count hidden />}
+          </a>
+        ))
+      }
+      <a href={REPO_URL}>GitHub ↗</a>
+    </nav>
+    <ThemeControl />
+  </div>
+</header>
+
+<style>
+  .site-header {
+    border-bottom: 1px solid var(--border);
+  }
+  .inner {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: var(--space-3) var(--gutter);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3) var(--space-5);
+  }
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--target);
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--fg);
+    text-decoration: none;
+  }
+  .tagline {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-left: auto;
+  }
+  nav a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--target);
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-control);
+    color: var(--fg);
+    text-decoration: none;
+    font-size: 15px;
+  }
+  nav a:hover {
+    background: var(--surface);
+  }
+  nav a[aria-current='page'] {
+    background: var(--surface2);
+  }
+  .count {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: var(--radius-pill);
+    background: var(--btn);
+    color: var(--btnFg);
+    font-size: 12px;
+    line-height: 20px;
+    text-align: center;
+  }
+  .count[hidden] {
+    display: none;
+  }
+</style>

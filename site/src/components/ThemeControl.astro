@@ -1,0 +1,58 @@
+---
+const options = [
+  { value: 'system', label: 'System theme', path: 'M3 4h18v12H3zM8 20h8M12 16v4' },
+  {
+    value: 'light',
+    label: 'Light theme',
+    path: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+  },
+  { value: 'dark', label: 'Dark theme', path: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z' },
+];
+---
+
+<div class="theme-control" role="group" aria-label="Theme">
+  {
+    options.map((o) => (
+      <button
+        type="button"
+        data-theme-choice={o.value}
+        aria-label={o.label}
+        aria-pressed={o.value === 'system' ? 'true' : 'false'}
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d={o.path} />
+        </svg>
+      </button>
+    ))
+  }
+</div>
+
+<script>
+  import '../scripts/theme';
+</script>
+
+<style>
+  .theme-control {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    overflow: hidden;
+  }
+  button {
+    display: grid;
+    place-items: center;
+    width: var(--target);
+    height: var(--target);
+    background: transparent;
+    color: var(--muted);
+    border: 0;
+    cursor: pointer;
+  }
+  button + button {
+    border-left: 1px solid var(--border);
+  }
+  button[aria-pressed='true'] {
+    background: var(--surface2);
+    color: var(--fg);
+  }
+</style>
