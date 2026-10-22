@@ -1,0 +1,8 @@
+{
+  "name": "gen-bin",
+  "owner": { "name": "yrazub" },
+  "plugins": [
+    { "name": "a", "source": "./plugins/a", "description": "Has components without descriptions." },
+    { "name": "b", "source": "./plugins/b" }
+  ]
+}

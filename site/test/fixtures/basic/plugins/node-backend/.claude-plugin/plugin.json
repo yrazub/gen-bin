@@ -1,0 +1,6 @@
+{
+  "name": "node-backend",
+  "version": "0.2.0",
+  "description": "Backend skills for Node services: Fastify routes and Drizzle ORM.",
+  "keywords": ["node", "backend"]
+}

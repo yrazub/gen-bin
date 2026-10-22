@@ -1,0 +1,12 @@
+{
+  "name": "gen-bin",
+  "owner": { "name": "yrazub" },
+  "plugins": [
+    {
+      "name": "lone-agent",
+      "source": "./plugins/lone-agent",
+      "description": "A plugin that only has a catalog entry.",
+      "version": "0.3.0"
+    }
+  ]
+}
