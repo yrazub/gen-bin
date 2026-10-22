@@ -24,6 +24,8 @@ Before changing the catalog or a plugin, read the matching official page:
 - **No `bin/`** at a plugin root (claude.ai org sync rejects it) — use `scripts/`. No Git LFS.
   Node dependencies only through a `package-lock.json`; pnpm and yarn lockfiles are ignored.
 - **Instructions for Claude** go in a skill. A `CLAUDE.md` inside a plugin is not loaded.
+- **The catalog site** (`site/`) is built from the plugin files, so a plugin change needs no
+  site change. It fails the build on a skill, agent, command or plugin without a `description`.
 
 ## Commands
 
@@ -33,6 +35,7 @@ Before changing the catalog or a plugin, read the matching official page:
 | validate one plugin | `claude plugin validate plugins/<name>` |
 | version guard | `node .github/scripts/check-version-bump.mjs origin/main` |
 | try it locally | `claude plugin marketplace add "$PWD"`, then `claude plugin install <name>@gen-bin` |
+| catalog site | `cd site && npm ci && npm run dev` — <http://localhost:4321/gen-bin/>; `npm test`, `npm run test:build`, `npm run test:e2e` |
 | clean up after | `claude plugin marketplace remove gen-bin` — one marketplace per name, so remove the local copy before adding `yrazub/gen-bin` |
 
 Run `claude plugin validate .` before every push. Commit messages are conventional,

@@ -6,5 +6,5 @@ Implementation plans live in [`../plans/`](../plans/), designs in [`../design/`]
 
 | Spec | Status |
 |---|---|
-| [`catalog-site.md`](catalog-site.md) | approved |
-| [`../plans/catalog-site.md`](../plans/catalog-site.md) | approved |
+| [`catalog-site.md`](catalog-site.md) | implemented |
+| [`../plans/catalog-site.md`](../plans/catalog-site.md) | done |

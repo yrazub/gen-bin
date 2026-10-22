@@ -1,6 +1,6 @@
 # Spec: gen-bin catalog site
 Spec ID: SPEC-2026-10-22-catalog-site
-Status: approved (2026-10-22, open questions resolved as recommended; amended the same day with the theme switcher and the local run, AC-40–AC-47)
+Status: implemented (2026-10-22; approved with open questions resolved as recommended, amended the same day with the theme switcher and the local run, AC-40–AC-47, and with the deploy action in the decision table)
 Design: [`docs/design/catalog-site.md`](../design/catalog-site.md)
 Supersedes: —
 
@@ -215,7 +215,7 @@ Terms used below:
 | Build tool | Astro 7, static output, `base: '/gen-bin/'` | Generates a page per plugin, renders Markdown, escapes output by default and builds RSS with `@astrojs/rss`. Without it, a hand-written generator would be needed. |
 | Browser code | Vanilla JS in Astro `<script>` islands, no UI framework | The interactive parts are small: the search box, copy buttons, team selection. |
 | Search engine | MiniSearch, index built at build time and loaded as JSON | Prefix and fuzzy matching, per-field boosts, a serialisable index, ~7 KB gzip. |
-| Deploy | `withastro/action` + `actions/deploy-pages`, pinned by SHA | No `gh-pages` branch, so the marketplace clone doesn't grow (NFR-5). |
+| Deploy | `actions/upload-pages-artifact` + `actions/deploy-pages`, pinned by SHA | No `gh-pages` branch, so the marketplace clone doesn't grow (NFR-5). One job also runs the tests and builds pull requests without uploading; `withastro/action` uploads on every run. |
 | Themes | Colour tokens as CSS custom properties for light and dark. A `data-theme` attribute on `<html>` overrides `prefers-color-scheme`, and a small inline script in `<head>` sets it from storage before first paint. | Keeps CSS working without JavaScript (AC-41) and avoids a flash of the wrong theme (AC-43). |
 | Local run | `npm run dev` (Astro dev server), `npm run build` + `npm run preview` (the exact deploy output), all served under `/gen-bin/` | One `base` for local and Pages, so links never differ between the two (NFR-9). |
 

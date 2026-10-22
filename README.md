@@ -3,6 +3,8 @@
 A [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces) with
 skills and agents for spec-driven development, extracted from DevDigest.
 
+Browse and search it at **<https://yrazub.github.io/gen-bin/>**.
+
 ## Install
 
 Inside a Claude Code session:
@@ -48,6 +50,13 @@ running session.
 | — | No plugins published yet | — |
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes.
+
+## Catalog site
+
+[`site/`](site/) builds the catalog site from this repository's own files (search, a page per
+plugin, a team setup generator, release notes with an RSS feed) and
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) publishes it to GitHub Pages on every
+push to `main`. See [`site/README.md`](site/README.md) to run it locally.
 
 ## License
 

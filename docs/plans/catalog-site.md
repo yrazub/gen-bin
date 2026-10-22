@@ -17,7 +17,7 @@ It runs locally with `npm run dev` / `npm run preview` under the same `/gen-bin/
 | **Design** | [`docs/design/catalog-site.md`](../design/catalog-site.md) |
 | **Branch** | `feature/catalog-site`. The spec, this plan and the code ship as one PR at the end. |
 | **Execution mode** | Single-agent. gen-bin has no agent setup of its own, and DevDigest's agents are wired to DevDigest paths. |
-| **Status** | approved 2026-10-22 |
+| **Status** | done 2026-10-22 |
 
 **Assumptions:**
 - **Open questions** OQ-1–OQ-5 are resolved as the spec recommends:
