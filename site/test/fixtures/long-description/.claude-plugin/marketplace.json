@@ -1,0 +1,12 @@
+{
+  "name": "gen-bin",
+  "owner": { "name": "yrazub" },
+  "plugins": [
+    {
+      "name": "wordy",
+      "source": "./plugins/wordy",
+      "version": "1.0.0",
+      "description": "A plugin whose description is deliberately longer than two hundred characters so the card has to cut it while the plugin page keeps every word: alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau ENDMARK"
+    }
+  ]
+}

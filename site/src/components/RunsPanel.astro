@@ -1,0 +1,169 @@
+---
+import type { Plugin } from '../lib/catalog/types';
+import { summarizeAgents } from '../lib/tools';
+
+interface Props {
+  plugin: Plugin;
+}
+const { runs } = Astro.props.plugin;
+const nothingRuns = !runs.hooks.length && !runs.mcpServers.length && !runs.bin.length;
+---
+
+<section class="runs" aria-labelledby="runs-title">
+  <h2 id="runs-title">What this plugin runs</h2>
+
+  {
+    !runs.inspectable ? (
+      <p>
+        This plugin's contents are hosted outside this repository, so what it runs can't be inspected here.
+      </p>
+    ) : (
+      <>
+        <p class="intro">
+          Everything below is declared in the plugin's own files. Hook commands and servers run on your machine
+          once the plugin is enabled.
+        </p>
+
+        {nothingRuns ? (
+          <p class="none-all">This plugin runs no hooks, MCP servers or executables.</p>
+        ) : (
+          <>
+            <h3>Hooks</h3>
+            {runs.hooks.length ? (
+              <ul>
+                {runs.hooks.map((h) => (
+                  <li>
+                    <span class="event">{h.event}</span>
+                    {h.matcher && <span class="matcher">matcher: <code>{h.matcher}</code></span>}
+                    <pre>{h.command}</pre>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p class="none">None</p>
+            )}
+
+            <h3>MCP servers</h3>
+            {runs.mcpServers.length ? (
+              <ul>
+                {runs.mcpServers.map((m) => (
+                  <li>
+                    <strong>{m.name}</strong>
+                    <pre>{m.command ?? m.url}</pre>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p class="none">None</p>
+            )}
+
+            <h3>Executables in <code>bin/</code></h3>
+            {runs.bin.length ? (
+              <ul>
+                {runs.bin.map((b) => (
+                  <li><code>{b}</code></li>
+                ))}
+              </ul>
+            ) : (
+              <p class="none">None</p>
+            )}
+          </>
+        )}
+
+        <h3>Agent tools</h3>
+        {runs.agents.length ? (
+          <>
+            <p class="summary">{summarizeAgents(runs.agents)}</p>
+            <ul>
+              {runs.agents.map((a) => (
+                <li>
+                  <strong>{a.name}</strong>
+                  <span class="model">{a.model ?? 'default model'}</span>
+                  <code class="tools">{a.tools.length ? a.tools.join(', ') : 'all tools (inherited)'}</code>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p class="none">None</p>
+        )}
+      </>
+    )
+  }
+</section>
+
+<style>
+  .runs {
+    padding: var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+  }
+  h2 {
+    font-size: 18px;
+    margin: 0 0 var(--space-2);
+  }
+  h3 {
+    font-size: 14px;
+    margin: var(--space-4) 0 var(--space-2);
+  }
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+  .intro,
+  .none,
+  .summary {
+    color: var(--muted);
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-2);
+  }
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    font-size: 14px;
+    min-width: 0;
+  }
+  .event {
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--badge-hook-bg);
+    color: var(--badge-hook-fg);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .matcher {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  pre {
+    flex-basis: 100%;
+    margin: 0;
+    font: 12px/1.5 var(--font-mono);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  code {
+    font: 12px/1.5 var(--font-mono);
+    overflow-wrap: anywhere;
+  }
+  .model {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .tools {
+    flex-basis: 100%;
+    color: var(--muted);
+  }
+</style>

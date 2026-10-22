@@ -62,6 +62,13 @@ describe('renderMarkdown', () => {
     expect(html).not.toMatch(/href=|src=/);
   });
 
+  it('shifts heading levels by headingOffset, up to h6', () => {
+    const html = renderMarkdown('# a\n\n### b\n\n###### c', { ...opts, headingOffset: 2 });
+    expect(html).toContain('<h3>a</h3>');
+    expect(html).toContain('<h5>b</h5>');
+    expect(html).toContain('<h6>c</h6>');
+  });
+
   it('renders GFM tables and code blocks', () => {
     const html = render(['| a | b |', '|---|---|', '| 1 | 2 |', '', '```ts', 'const x = 1;', '```'].join('\n'));
     expect(html).toContain('<table>');

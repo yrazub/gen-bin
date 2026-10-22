@@ -10,6 +10,8 @@ export interface RenderOptions {
   /** Directory of the Markdown file, relative to the repository root ('' for the root). */
   repoPath: string;
   commitSha: string;
+  /** Added to every heading level, so a README's h1 sits under the page's own headings. */
+  headingOffset?: number;
 }
 
 interface HastNode {
@@ -58,6 +60,10 @@ function visit(node: HastNode, fn: (el: HastNode) => void): void {
 function rewriteLinks(options: RenderOptions) {
   return (tree: HastNode) =>
     visit(tree, (el) => {
+      const heading = /^h([1-6])$/.exec(el.tagName ?? '');
+      if (heading && options.headingOffset) {
+        el.tagName = `h${Math.min(6, Number(heading[1]) + options.headingOffset)}`;
+      }
       const props = el.properties;
       if (!props) return;
       if (el.tagName === 'a' && typeof props.href === 'string') {

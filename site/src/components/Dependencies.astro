@@ -1,0 +1,70 @@
+---
+import { MARKETPLACE } from '../lib/constants';
+import type { Dependency } from '../lib/catalog/types';
+import { url } from '../lib/url';
+
+interface Props {
+  dependencies: Dependency[];
+  /** Names of the plugins in this marketplace. */
+  known: string[];
+}
+const { dependencies, known } = Astro.props;
+
+// "name@gen-bin" names a plugin of this marketplace; "name@other" does not.
+const local = (d: Dependency) => {
+  const [name, marketplace] = d.name.split('@');
+  return known.includes(name) && (!marketplace || marketplace === MARKETPLACE) ? name : undefined;
+};
+---
+
+{
+  dependencies.length > 0 && (
+    <section>
+      <h2>Dependencies</h2>
+      <ul>
+        {dependencies.map((d) => {
+          const name = local(d);
+          return (
+            <li>
+              {name ? <a href={url(`plugins/${name}/`)}>{d.name}</a> : <span>{d.name}</span>}
+              {d.version && <code>{d.version}</code>}
+              {!name && <span class="note">not in this marketplace</span>}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  )
+}
+
+<style>
+  h2 {
+    font-size: 18px;
+    margin: 0 0 var(--space-3);
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-2);
+  }
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    overflow-wrap: anywhere;
+  }
+  code {
+    font: 12px var(--font-mono);
+    color: var(--muted);
+  }
+  .note {
+    color: var(--muted);
+    font-size: 13px;
+  }
+</style>
