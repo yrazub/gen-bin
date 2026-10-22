@@ -14,6 +14,9 @@ interface Loaded {
 const MIN_QUERY = 2;
 const DEBOUNCE_MS = 150;
 const MAX_QUERY = 200;
+// Cards drawn before the browser gets a frame back; the rest follow one chunk per frame (NFR-3).
+const FIRST_CHUNK = 30;
+const NEXT_CHUNK = 60;
 
 const app = document.getElementById('search-app');
 if (app) init(app);
@@ -79,8 +82,7 @@ function init(app: HTMLElement): void {
       : matched.filter((c) => c.type === (state.type === 'all' ? 'plugin' : state.type));
 
     const terms = hasQuery ? queryTerms(q) : [];
-    grid.replaceChildren(...shown.map((card) => render(template, card, terms)));
-    notifyChange();
+    renderCards(shown, terms);
 
     const empty = hasQuery && shown.length === 0;
     noMatches.hidden = !empty;
@@ -88,6 +90,22 @@ function init(app: HTMLElement): void {
     status.textContent = hasQuery
       ? `${shown.length} ${shown.length === 1 ? 'result' : 'results'} for "${q}"`
       : `Showing all ${shown.length} ${typeNoun(state.type)}`;
+  }
+
+  let renderToken = 0;
+  function renderCards(shown: SearchCard[], terms: string[]): void {
+    const token = ++renderToken;
+    grid.replaceChildren(...shown.slice(0, FIRST_CHUNK).map((card) => render(template, card, terms)));
+    notifyChange();
+    let next = FIRST_CHUNK;
+    const step = () => {
+      if (token !== renderToken || next >= shown.length) return; // a newer search replaced this one
+      grid.append(...shown.slice(next, next + NEXT_CHUNK).map((card) => render(template, card, terms)));
+      next += NEXT_CHUNK;
+      notifyChange();
+      requestAnimationFrame(step);
+    };
+    if (shown.length > FIRST_CHUNK) requestAnimationFrame(step);
   }
 
   function writeUrl(): void {
