@@ -1,5 +1,6 @@
 ---
 import ThemeControl from './ThemeControl.astro';
+import { loadCatalog } from '../lib/catalog';
 import { url } from '../lib/url';
 import { REPO_URL } from '../lib/repo';
 
@@ -7,6 +8,7 @@ interface Props {
   current?: 'search' | 'whats-new' | 'team';
 }
 const { current } = Astro.props;
+const known = loadCatalog().plugins.map((p) => p.name).join(',');
 const nav = [
   { id: 'search', label: 'Search', href: url() },
   { id: 'whats-new', label: "What's new", href: url('whats-new/') },
@@ -28,7 +30,7 @@ const nav = [
         nav.map((n) => (
           <a href={n.href} aria-current={current === n.id ? 'page' : undefined}>
             {n.label}
-            {n.id === 'team' && <span class="count" data-team-count hidden />}
+            {n.id === 'team' && <span class="count" data-team-count data-known={known} hidden />}
           </a>
         ))
       }
@@ -37,6 +39,10 @@ const nav = [
     <ThemeControl />
   </div>
 </header>
+
+<script>
+  import '../scripts/header-count';
+</script>
 
 <style>
   .site-header {

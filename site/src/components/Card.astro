@@ -1,5 +1,6 @@
 ---
 import CopyCommand from './CopyCommand.astro';
+import TeamToggle from './TeamToggle.astro';
 import TypeBadge from './TypeBadge.astro';
 import type { SearchCard } from '../lib/search/card';
 
@@ -21,7 +22,10 @@ const isPlugin = card.type === 'plugin';
   <p class="invocable" data-f="invocable">{card.invocable}</p>
   <p class="description" data-f="description">{card.description}</p>
   <CopyCommand command={card.install} label="install command" />
-  <p class="source"><a href={card.sourceHref} data-f="source">Source ↗</a></p>
+  <div class="foot">
+    <a href={card.sourceHref} data-f="source">Source ↗</a>
+    <TeamToggle plugin={isPlugin ? card.plugin : ''} />
+  </div>
 </article>
 
 <style>
@@ -75,10 +79,15 @@ const isPlugin = card.type === 'plugin';
     overflow-wrap: anywhere;
     white-space: pre-line;
   }
-  .source {
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
     font-size: 14px;
   }
-  .source a {
+  .foot a {
     display: inline-flex;
     align-items: center;
     min-height: var(--target);

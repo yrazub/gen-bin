@@ -1,0 +1,255 @@
+---
+import Base from '../../layouts/Base.astro';
+import CopyCommand from '../../components/CopyCommand.astro';
+import { loadCatalog } from '../../lib/catalog';
+import { REPO_URL } from '../../lib/constants';
+import { url } from '../../lib/url';
+
+const { plugins } = loadCatalog();
+// Only names and dependencies reach the script; "<" is escaped so the JSON cannot close its own tag.
+const data = JSON.stringify(plugins.map((p) => ({ name: p.name, dependencies: p.dependencies.map((d) => ({ name: d.name })) }))).replace(/</g, '\\u003c');
+---
+
+<Base title="Team setup · gen-bin" description="Pick plugins and get a .claude/settings.json snippet for your team" current="team">
+  <h1>Team setup</h1>
+  <p class="intro">
+    Pick the plugins your team should use and commit the snippet to <code>.claude/settings.json</code> in your
+    repository. Everyone who trusts the folder gets the marketplace and the plugins, with no manual steps.
+  </p>
+
+  {
+    plugins.length === 0 ? (
+      <section class="empty">
+        <h2>No plugins published yet</h2>
+        <p>
+          Follow <a href={url('whats-new/')}>What's new</a> for the first release, or browse the{' '}
+          <a href={REPO_URL}>repository</a>.
+        </p>
+      </section>
+    ) : (
+      <>
+        <noscript><p class="notice">Team setup needs JavaScript.</p></noscript>
+
+        <div class="layout" data-team-app hidden>
+          <fieldset class="plugins">
+            <legend>Plugins</legend>
+            {plugins.map((p) => (
+              <label class="row" data-row={p.name}>
+                <input type="checkbox" value={p.name} />
+                <span class="body">
+                  <span class="name">{p.displayName} <code>{p.name}</code></span>
+                  <span class="desc">{p.description}</span>
+                  <span class="dep" data-dep hidden />
+                </span>
+              </label>
+            ))}
+          </fieldset>
+
+          <div class="output">
+            <ul class="unknown" data-unknown hidden />
+
+            <div class="none" data-none hidden>
+              <h2>No plugins selected</h2>
+              <p>Choose plugins on the left, or browse them first.</p>
+              <a class="button" href={url()}>Browse plugins</a>
+            </div>
+
+            <div data-detail hidden>
+              <section>
+                <div class="head">
+                  <h2><code>.claude/settings.json</code></h2>
+                  <button type="button" class="primary" data-copy="" data-snippet-copy aria-label="Copy snippet">Copy snippet</button>
+                </div>
+                <div data-copy-box>
+                  <pre><code data-snippet /></pre>
+                </div>
+                <p class="note">If the file already exists, merge these two keys into it.</p>
+              </section>
+
+              <section>
+                <h2>Share this selection</h2>
+                <div data-share>
+                  <CopyCommand command="" label="share link" />
+                </div>
+              </section>
+
+              <section>
+                <div class="head">
+                  <h2>Prefer to install on one machine?</h2>
+                  <button type="button" data-copy="" data-shell-copy aria-label="Copy shell commands">Copy</button>
+                </div>
+                <div data-copy-box>
+                  <pre><code data-shell /></pre>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <script type="application/json" id="team-data" set:html={data} />
+      </>
+    )
+  }
+</Base>
+
+<script>
+  import '../../scripts/team';
+</script>
+
+<style>
+  .intro {
+    max-width: 760px;
+    color: var(--muted);
+    margin: 0 0 var(--space-5);
+  }
+  .layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    align-items: flex-start;
+  }
+  .layout[hidden] {
+    display: none;
+  }
+  .plugins {
+    flex: 1 1 min(380px, 100%);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+  legend {
+    font-size: 18px;
+    font-weight: 600;
+    padding: 0;
+    margin-bottom: var(--space-3);
+  }
+  .row {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+    padding: var(--space-3) var(--space-4);
+    min-height: var(--target);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    cursor: pointer;
+  }
+  .row:has(input:checked) {
+    border-color: var(--btn);
+    background: var(--surface);
+  }
+  .row input {
+    width: 20px;
+    height: 20px;
+    margin: 2px 0 0;
+    flex: none;
+  }
+  .body {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+  .name {
+    font-weight: 600;
+  }
+  .name code {
+    font: 12px var(--font-mono);
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .desc {
+    font-size: 14px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  .dep {
+    font-size: 13px;
+    color: var(--ok);
+  }
+  .output {
+    flex: 1 1 min(420px, 100%);
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-5);
+  }
+  .output section {
+    margin-bottom: var(--space-5);
+  }
+  h2 {
+    font-size: 18px;
+    margin: 0;
+  }
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+  button {
+    min-height: var(--target);
+    padding: 0 var(--space-4);
+    background: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    font: 15px var(--font-sans);
+    cursor: pointer;
+  }
+  button.primary {
+    background: var(--btn);
+    border-color: var(--btn);
+    color: var(--btnFg);
+  }
+  pre {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    background: var(--code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    overflow-x: auto;
+    font: 13px/1.5 var(--font-mono);
+  }
+  .note {
+    margin: var(--space-2) 0 0;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .none,
+  .empty {
+    padding: var(--space-6) var(--space-4);
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-card);
+  }
+  .none h2 {
+    margin-bottom: var(--space-2);
+  }
+  .button {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--target);
+    padding: 0 var(--space-4);
+    background: var(--btn);
+    color: var(--btnFg);
+    border-radius: var(--radius-control);
+    text-decoration: none;
+  }
+  .unknown {
+    margin: 0;
+    padding: var(--space-3) var(--space-4) var(--space-3) var(--space-6);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-card);
+    overflow-wrap: anywhere;
+  }
+  .notice {
+    padding: var(--space-3) var(--space-4);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-card);
+  }
+</style>

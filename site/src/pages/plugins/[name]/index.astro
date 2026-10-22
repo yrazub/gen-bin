@@ -3,6 +3,7 @@ import Base from '../../../layouts/Base.astro';
 import CopyCommand from '../../../components/CopyCommand.astro';
 import Dependencies from '../../../components/Dependencies.astro';
 import RunsPanel from '../../../components/RunsPanel.astro';
+import TeamToggle from '../../../components/TeamToggle.astro';
 import TypeBadge from '../../../components/TypeBadge.astro';
 import { loadCatalog } from '../../../lib/catalog';
 import type { Artifact, ArtifactType } from '../../../lib/catalog/types';
@@ -52,7 +53,10 @@ const releases = catalog.releases.filter((r) => r.plugin === plugin.name);
   </nav>
 
   <header class="title">
-    <div class="kicker"><TypeBadge type="plugin" /> <code>{plugin.name}</code></div>
+    <div class="title-row">
+      <div class="kicker"><TypeBadge type="plugin" /> <code>{plugin.name}</code></div>
+      <TeamToggle plugin={plugin.name} />
+    </div>
     <h1>{plugin.displayName}</h1>
     <p class="description">{plugin.description}</p>
     <ul class="meta">
@@ -157,6 +161,14 @@ const releases = catalog.releases.filter((r) => r.plugin === plugin.name);
     font-size: 14px;
     color: var(--muted);
     margin-bottom: var(--space-4);
+  }
+  .title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
   }
   .kicker {
     display: flex;

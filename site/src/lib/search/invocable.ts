@@ -2,6 +2,7 @@ import { MARKETPLACE, REPO } from '../constants';
 import type { ArtifactType } from '../catalog/types';
 
 export const MARKETPLACE_ADD = `/plugin marketplace add ${REPO}`;
+export const SHELL_MARKETPLACE_ADD = `claude plugin marketplace add ${REPO}`;
 
 /** Every artifact installs through its parent plugin (AC-5, AC-6). */
 export const installCommand = (plugin: string): string => `/plugin install ${plugin}@${MARKETPLACE}`;

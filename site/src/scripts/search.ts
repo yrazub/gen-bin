@@ -4,6 +4,7 @@ import { highlightParts, queryTerms, type Part } from '../lib/search/highlight';
 import { FILTER_TYPES, isFilterType, TYPE_LABELS, type FilterType } from '../lib/search/invocable';
 import { miniSearchOptions } from '../lib/search/options';
 import type { SearchCard } from '../lib/search/card';
+import { notifyChange } from '../lib/team/selection';
 
 interface Loaded {
   ms: MiniSearch;
@@ -79,6 +80,7 @@ function init(app: HTMLElement): void {
 
     const terms = hasQuery ? queryTerms(q) : [];
     grid.replaceChildren(...shown.map((card) => render(template, card, terms)));
+    notifyChange();
 
     const empty = hasQuery && shown.length === 0;
     noMatches.hidden = !empty;
@@ -151,6 +153,7 @@ function render(template: HTMLTemplateElement, card: SearchCard, terms: string[]
   part('invocable').textContent = card.invocable;
   part('description').replaceChildren(...marks(highlightParts(card.description, terms)));
   (part('source') as HTMLAnchorElement).href = card.sourceHref;
+  el.querySelector<HTMLElement>('[data-team-toggle]')!.dataset.teamToggle = card.type === 'plugin' ? card.plugin : '';
 
   el.querySelector('code')!.textContent = card.install;
   const copy = el.querySelector<HTMLButtonElement>('button[data-copy]')!;
