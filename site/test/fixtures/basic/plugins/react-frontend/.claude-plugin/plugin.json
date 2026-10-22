@@ -1,0 +1,7 @@
+{
+  "name": "react-frontend",
+  "version": "0.1.0",
+  "description": "React skills for Next.js apps.",
+  "keywords": ["react", "frontend"],
+  "dependencies": ["node-backend", { "name": "left-pad-plugin", "version": "^1.0.0" }]
+}

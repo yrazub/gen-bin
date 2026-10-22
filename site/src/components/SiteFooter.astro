@@ -1,0 +1,43 @@
+---
+import { url } from '../lib/url';
+import { REPO, REPO_URL, commitSha } from '../lib/repo';
+
+const sha = commitSha();
+---
+
+<footer class="site-footer">
+  <div class="inner">
+    <p>
+      Built from <a href={REPO_URL}>{REPO}</a> at commit <code>{sha}</code>
+    </p>
+    <p>
+      <a href={url('rss.xml')}>RSS feed</a> ·
+      <a href={`${REPO_URL}/blob/main/LICENSE`}>License</a>
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--border);
+    margin-top: var(--space-7);
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .inner {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: var(--space-5) var(--gutter);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+  p {
+    margin: 0;
+  }
+  code {
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+</style>

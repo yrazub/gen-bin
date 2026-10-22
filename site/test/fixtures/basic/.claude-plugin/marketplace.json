@@ -1,0 +1,10 @@
+{
+  "name": "gen-bin",
+  "owner": { "name": "yrazub" },
+  "plugins": [
+    { "name": "sdd-workflow", "source": "./plugins/sdd-workflow" },
+    { "name": "pr-review", "source": "./plugins/pr-review" },
+    { "name": "node-backend", "source": "./plugins/node-backend" },
+    { "name": "react-frontend", "source": "./plugins/react-frontend" }
+  ]
+}

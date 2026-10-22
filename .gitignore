@@ -1,3 +1,7 @@
 .DS_Store
 node_modules/
 dev-digest.code-workspace
+site/dist/
+site/.astro/
+site/test-results/
+site/playwright-report/

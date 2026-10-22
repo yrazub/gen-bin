@@ -1,0 +1,9 @@
+{
+  "name": "sdd-workflow",
+  "displayName": "SDD workflow",
+  "version": "0.1.0",
+  "description": "Spec-driven development: spec, plan and build a feature with agents.",
+  "author": { "name": "yrazub" },
+  "license": "MIT",
+  "keywords": ["spec", "planning", "workflow"]
+}

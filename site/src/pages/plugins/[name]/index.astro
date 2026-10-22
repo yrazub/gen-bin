@@ -1,0 +1,328 @@
+---
+import Base from '../../../layouts/Base.astro';
+import CopyCommand from '../../../components/CopyCommand.astro';
+import Dependencies from '../../../components/Dependencies.astro';
+import RunsPanel from '../../../components/RunsPanel.astro';
+import TeamToggle from '../../../components/TeamToggle.astro';
+import TypeBadge from '../../../components/TypeBadge.astro';
+import { loadCatalog } from '../../../lib/catalog';
+import type { Artifact, ArtifactType } from '../../../lib/catalog/types';
+import { httpUrl } from '../../../lib/http-url';
+import { renderMarkdown } from '../../../lib/markdown';
+import { releaseDate, releaseHtml } from '../../../lib/releases';
+import { commitSha, sourceUrl } from '../../../lib/repo';
+import { installCommand, MARKETPLACE_ADD, shellInstallCommand, TYPE_LABELS } from '../../../lib/search/invocable';
+import { url } from '../../../lib/url';
+
+export function getStaticPaths() {
+  return loadCatalog().plugins.map((plugin) => ({ params: { name: plugin.name }, props: { plugin } }));
+}
+
+const { plugin } = Astro.props;
+const catalog = loadCatalog();
+const sha = commitSha();
+
+const groups: { type: ArtifactType; title: string }[] = [
+  { type: 'skill', title: 'Skills' },
+  { type: 'agent', title: 'Agents' },
+  { type: 'command', title: 'Commands' },
+  { type: 'hook', title: 'Hooks' },
+  { type: 'mcp', title: 'MCP servers' },
+];
+const byType = (t: ArtifactType): Artifact[] => plugin.components.filter((a) => a.type === t);
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+const summary = groups
+  .map((g) => [byType(g.type).length, g.type] as const)
+  .filter(([n]) => n)
+  .map(([n, t]) => plural(n, TYPE_LABELS[t].toLowerCase()))
+  .join(' · ');
+
+const local = plugin.source.kind === 'local' ? plugin.source : undefined;
+const external = plugin.source.kind === 'external' ? plugin.source : undefined;
+const externalLink = external?.link;
+const homepage = httpUrl(plugin.homepage);
+const repository = httpUrl(plugin.repository);
+const sourceLink = local ? sourceUrl(local.dir, 'tree', sha) : externalLink ?? sourceUrl(plugin.file, 'blob', sha);
+const readme = plugin.readme && local ? renderMarkdown(plugin.readme, { repoPath: local.dir, commitSha: sha, headingOffset: 2 }) : undefined;
+const releases = catalog.releases.filter((r) => r.plugin === plugin.name);
+---
+
+<Base title={`${plugin.displayName} · gen-bin`} description={plugin.description}>
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a href={url()}>Search</a> <span aria-hidden="true">/</span> <span aria-current="page">{plugin.name}</span>
+  </nav>
+
+  <header class="title">
+    <div class="title-row">
+      <div class="kicker"><TypeBadge type="plugin" /> <code>{plugin.name}</code></div>
+      <TeamToggle plugin={plugin.name} />
+    </div>
+    <h1>{plugin.displayName}</h1>
+    <p class="description">{plugin.description}</p>
+    <ul class="meta">
+      <li>{plugin.version === 'unversioned' ? 'unversioned' : `v${plugin.version}`}</li>
+      {plugin.license && <li>License: {plugin.license}</li>}
+      {plugin.author && <li>By {plugin.author}</li>}
+      {homepage && <li><a href={homepage}>Homepage ↗</a></li>}
+      {repository && <li><a href={repository}>Repository ↗</a></li>}
+      <li><a href={sourceLink}>Source ↗</a></li>
+    </ul>
+  </header>
+
+  <section class="install" aria-labelledby="install-title">
+    <h2 id="install-title">Install</h2>
+    <div class="row"><p>Add the marketplace once, in Claude Code</p><CopyCommand command={MARKETPLACE_ADD} label="marketplace command" /></div>
+    <div class="row"><p>Install in a Claude Code session</p><CopyCommand command={installCommand(plugin.name)} label="install command" /></div>
+    <div class="row"><p>Or install from a shell</p><CopyCommand command={shellInstallCommand(plugin.name)} label="shell install command" /></div>
+  </section>
+
+  <div class="columns">
+    <div class="main">
+      {
+        external && (
+          <section class="notice">
+            <p>
+              Contents are hosted outside this repository.
+              {externalLink && <> <a href={externalLink}>Open the plugin's source ↗</a></>}
+            </p>
+          </section>
+        )
+      }
+
+      {
+        local && (
+          <section aria-labelledby="contents-title">
+            <h2 id="contents-title">Contents</h2>
+            <p class="summary">{summary || 'This plugin has no skills, agents, commands, hooks or MCP servers.'}</p>
+            {groups.map(
+              (g) =>
+                byType(g.type).length > 0 && (
+                  <>
+                    <h3>{g.title}</h3>
+                    <ul class="items">
+                      {byType(g.type).map((a) => (
+                        <li>
+                          <div class="head">
+                            <strong>{a.name}</strong>
+                            {a.model && <span class="model">{a.model}</span>}
+                            <code class="inv">{a.invocable}</code>
+                          </div>
+                          {a.type === 'hook' || a.type === 'mcp' ? <pre>{a.description}</pre> : <p>{a.description}</p>}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ),
+            )}
+          </section>
+        )
+      }
+
+      {
+        readme && (
+          <section aria-labelledby="readme-title">
+            <h2 id="readme-title">README</h2>
+            <div class="readme" set:html={readme} />
+          </section>
+        )
+      }
+
+      <section aria-labelledby="releases-title">
+        <h2 id="releases-title">Release notes</h2>
+        {
+          releases.length ? (
+            <>
+              {releases.map((r) => (
+                <article class="release">
+                  <h3>
+                    <code>{r.version}</code> <span class="date">{releaseDate(r)}</span>
+                  </h3>
+                  <div class="readme" set:html={releaseHtml(r, sha, 1)} />
+                </article>
+              ))}
+              <p><a href={url('whats-new/')}>All releases</a></p>
+            </>
+          ) : (
+            <p class="summary">No release notes yet.</p>
+          )
+        }
+      </section>
+    </div>
+
+    <aside>
+      <RunsPanel plugin={plugin} />
+      <Dependencies dependencies={plugin.dependencies} known={catalog.plugins.map((p) => p.name)} />
+    </aside>
+  </div>
+</Base>
+
+<style>
+  .crumbs {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: var(--space-4);
+  }
+  .title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+  .kicker {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 14px;
+  }
+  .description {
+    margin: 0 0 var(--space-3);
+    max-width: 760px;
+    overflow-wrap: anywhere;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-5);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .install {
+    margin: var(--space-5) 0;
+    padding: var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+  .install h2 {
+    margin: 0;
+    font-size: 18px;
+  }
+  .row p {
+    margin: 0 0 var(--space-1);
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .columns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    align-items: flex-start;
+  }
+  .main {
+    flex: 999 1 560px;
+    min-width: 0;
+  }
+  aside {
+    flex: 1 1 320px;
+    min-width: 0;
+    display: grid;
+    gap: var(--space-5);
+  }
+  .main h2 {
+    margin: var(--space-6) 0 var(--space-3);
+  }
+  .main section:first-child h2 {
+    margin-top: 0;
+  }
+  h3 {
+    font-size: 16px;
+    margin: var(--space-4) 0 var(--space-2);
+  }
+  .summary {
+    color: var(--muted);
+    margin: 0;
+  }
+  .notice {
+    padding: var(--space-4);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-card);
+  }
+  .notice p {
+    margin: 0;
+  }
+  .items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+  }
+  .items li {
+    padding: var(--space-3) var(--space-4);
+  }
+  .items li + li {
+    border-top: 1px solid var(--border);
+  }
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-2);
+  }
+  .inv {
+    margin-left: auto;
+    font: 12px var(--font-mono);
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  .model {
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--surface2);
+    font-size: 12px;
+  }
+  .items p,
+  .items pre {
+    margin: var(--space-1) 0 0;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+  .items pre {
+    font: 12px/1.5 var(--font-mono);
+    white-space: pre-wrap;
+  }
+  .readme :global(h4) {
+    font-size: 15px;
+    margin: var(--space-3) 0 var(--space-1);
+  }
+  .readme {
+    max-width: 760px;
+    overflow-wrap: anywhere;
+  }
+  .readme :global(pre) {
+    overflow-x: auto;
+    padding: var(--space-3);
+    background: var(--code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+  }
+  .readme :global(table) {
+    border-collapse: collapse;
+    display: block;
+    overflow-x: auto;
+  }
+  .readme :global(th),
+  .readme :global(td) {
+    border: 1px solid var(--border);
+    padding: var(--space-1) var(--space-3);
+  }
+  .readme :global(img) {
+    max-width: 100%;
+  }
+  .release {
+    margin-bottom: var(--space-4);
+  }
+  .date {
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 400;
+  }
+</style>

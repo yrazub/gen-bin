@@ -1,0 +1,40 @@
+---
+interface Props {
+  /** The plugin to toggle; empty on a card that is not a plugin card (the script hides it). */
+  plugin: string;
+}
+const { plugin } = Astro.props;
+---
+
+<button
+  type="button"
+  class="team-toggle"
+  data-team-toggle={plugin}
+  aria-pressed="false"
+  aria-label={plugin ? `Add ${plugin} to team setup` : 'Add to team setup'}
+  hidden
+>
+  + Add to team setup
+</button>
+
+<script>
+  import '../scripts/team-toggle';
+</script>
+
+<style>
+  .team-toggle {
+    min-height: var(--target);
+    padding: 0 var(--space-3);
+    background: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    font: 14px var(--font-sans);
+    cursor: pointer;
+  }
+  .team-toggle[aria-pressed='true'] {
+    border-color: var(--btn);
+    color: var(--ok);
+    font-weight: 600;
+  }
+</style>

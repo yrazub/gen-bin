@@ -1,0 +1,29 @@
+---
+import { TYPE_LABELS } from '../lib/search/invocable';
+import type { ArtifactType } from '../lib/catalog/types';
+
+interface Props {
+  type: ArtifactType;
+}
+const { type } = Astro.props;
+---
+
+<span class="badge" data-type={type}>{TYPE_LABELS[type]}</span>
+
+<style is:global>
+  .badge {
+    display: inline-block;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 20px;
+    white-space: nowrap;
+  }
+  .badge[data-type='plugin'] { background: var(--badge-plugin-bg); color: var(--badge-plugin-fg); }
+  .badge[data-type='skill'] { background: var(--badge-skill-bg); color: var(--badge-skill-fg); }
+  .badge[data-type='agent'] { background: var(--badge-agent-bg); color: var(--badge-agent-fg); }
+  .badge[data-type='command'] { background: var(--badge-command-bg); color: var(--badge-command-fg); }
+  .badge[data-type='hook'] { background: var(--badge-hook-bg); color: var(--badge-hook-fg); }
+  .badge[data-type='mcp'] { background: var(--badge-mcp-bg); color: var(--badge-mcp-fg); }
+</style>

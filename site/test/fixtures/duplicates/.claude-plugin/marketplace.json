@@ -1,0 +1,8 @@
+{
+  "name": "gen-bin",
+  "owner": { "name": "yrazub" },
+  "plugins": [
+    { "name": "alpha", "source": "./plugins/alpha", "description": "First plugin with a review skill." },
+    { "name": "beta", "source": "./plugins/beta", "description": "Second plugin with a review skill." }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "gen-bin",
+  "owner": { "name": "yrazub" },
+  "plugins": [
+    {
+      "name": "remote-tool",
+      "source": { "source": "github", "repo": "someone/remote-tool" },
+      "description": "Lives in another repository."
+    }
+  ]
+}

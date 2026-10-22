@@ -1,0 +1,1 @@
+{ "name": "gen-bin", "owner": { "name": "yrazub" }, "plugins": [{ "name": "broken", "source": "./plugins/broken", "description": "Has a skill with bad YAML." }] }
