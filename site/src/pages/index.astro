@@ -1,8 +1,203 @@
 ---
 import Base from '../layouts/Base.astro';
+import Card from '../components/Card.astro';
+import CopyCommand from '../components/CopyCommand.astro';
+import { loadCatalog } from '../lib/catalog';
+import { REPO_URL } from '../lib/constants';
+import { commitSha } from '../lib/repo';
+import { buildSearchData } from '../lib/search/build';
+import type { SearchCard } from '../lib/search/card';
+import { FILTER_TYPES, MARKETPLACE_ADD } from '../lib/search/invocable';
+import { url } from '../lib/url';
+
+const catalog = loadCatalog();
+const sha = commitSha();
+const { cards } = buildSearchData(catalog, sha);
+const pluginCards = cards.filter((c) => c.type === 'plugin');
+const count = (type: string) => catalog.artifacts.filter((a) => a.type === type).length;
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+const inside = [
+  [count('skill'), 'skill'],
+  [count('agent'), 'agent'],
+  [count('command'), 'command'],
+  [count('hook'), 'hook'],
+  [count('mcp'), 'MCP server'],
+].filter(([n]) => n)
+  .map(([n, label]) => plural(n as number, label as string));
+const list =
+  inside.length > 1 ? `${inside.slice(0, -1).join(', ')} and ${inside[inside.length - 1]}` : inside[0] ?? '';
+const summary = `Search ${plural(pluginCards.length, 'plugin')}${list ? ` and everything inside them: ${list}` : ''}.`;
+
+const blank: SearchCard = { id: 0, type: 'plugin', name: '', invocable: '', plugin: '', description: '', version: '', install: '', pluginHref: '#', sourceHref: '#' };
 ---
 
 <Base title="gen-bin · Claude Code plugin marketplace" current="search">
   <h1>Find a skill, agent or plugin for your task</h1>
-  <p>Search is coming in the next phase.</p>
+
+  {
+    pluginCards.length === 0 ? (
+      <section class="empty">
+        <h2>No plugins published yet</h2>
+        <p>
+          Follow <a href={url('whats-new/')}>What's new</a> for the first release, or browse the{' '}
+          <a href={REPO_URL}>repository</a>.
+        </p>
+      </section>
+    ) : (
+      <div id="search-app" data-index-url={url('search-index.json')}>
+        <p class="summary">{summary}</p>
+
+        <div class="marketplace">
+          <p>First, add the marketplace in Claude Code:</p>
+          <CopyCommand command={MARKETPLACE_ADD} label="marketplace command" />
+        </div>
+
+        <noscript>
+          <p class="notice">Search needs JavaScript. All plugins are listed below.</p>
+        </noscript>
+
+        <form role="search" action={url()} method="get" data-search-form hidden>
+          <label for="q">Search plugins, skills and agents</label>
+          <input id="q" name="q" type="search" autocomplete="off" spellcheck="false" maxlength="200" placeholder="e.g. review fastify routes" />
+          <div class="chips" role="group" aria-label="Filter by type">
+            {
+              FILTER_TYPES.map((f) => (
+                <button type="button" data-chip={f.value} aria-pressed={f.value === 'all' ? 'true' : 'false'}>
+                  {f.label} <span class="n" data-chip-count />
+                </button>
+              ))
+            }
+          </div>
+        </form>
+
+        <p class="status" role="status" aria-live="polite" data-status>
+          Showing all {plural(pluginCards.length, 'plugin')}
+        </p>
+
+        <div class="no-matches" data-no-matches hidden>
+          <p data-no-matches-text />
+          <button type="button" data-clear>Clear search and filters</button>
+        </div>
+
+        <h2 class="visually-hidden">Results</h2>
+        <div class="grid" data-grid>
+          {pluginCards.map((card) => <Card card={card} />)}
+        </div>
+
+        <template id="card-template">
+          <Card card={blank} />
+        </template>
+      </div>
+    )
+  }
 </Base>
+
+<script>
+  import '../scripts/search';
+</script>
+
+<style>
+  .summary {
+    margin: 0 0 var(--space-4);
+    color: var(--muted);
+  }
+  .marketplace {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    margin-bottom: var(--space-5);
+  }
+  .marketplace p {
+    margin: 0;
+    font-size: 15px;
+  }
+  .marketplace :global(.copy) {
+    flex: 1 1 320px;
+  }
+  .notice {
+    padding: var(--space-3) var(--space-4);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-card);
+  }
+  form label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+  }
+  input[type='search'] {
+    width: 100%;
+    height: 52px;
+    padding: 0 var(--space-4);
+    background: var(--bg);
+    color: var(--fg);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius-control);
+    font: 17px var(--font-sans);
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+  }
+  .chips button {
+    min-height: var(--target);
+    padding: 0 var(--space-4);
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    font: 15px var(--font-sans);
+    cursor: pointer;
+  }
+  .chips button[aria-pressed='true'] {
+    background: var(--btn);
+    border-color: var(--btn);
+    color: var(--btnFg);
+  }
+  .n {
+    opacity: 0.8;
+    font-size: 13px;
+  }
+  .status {
+    margin: var(--space-4) 0;
+    color: var(--muted);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+    gap: var(--space-4);
+  }
+  .no-matches,
+  .empty {
+    padding: var(--space-6) var(--space-4);
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-card);
+    margin-bottom: var(--space-4);
+  }
+  .no-matches button {
+    min-height: var(--target);
+    padding: 0 var(--space-4);
+    background: var(--btn);
+    color: var(--btnFg);
+    border: 0;
+    border-radius: var(--radius-control);
+    font: 15px var(--font-sans);
+    cursor: pointer;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>

@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
+import { REPO, REPO_URL } from './constants';
 
-export const REPO = 'yrazub/gen-bin';
-export const REPO_URL = `https://github.com/${REPO}`;
+export { REPO, REPO_URL };
 
 /** Short commit SHA of the working tree, or "local" outside a git checkout. */
 export function commitSha(): string {
@@ -13,4 +13,9 @@ export function commitSha(): string {
   } catch {
     return 'local';
   }
+}
+
+/** GitHub URL of a repository file or directory at the built commit ("main" when built outside git). */
+export function sourceUrl(path: string, kind: 'blob' | 'tree', sha: string): string {
+  return `${REPO_URL}/${kind}/${sha === 'local' ? 'main' : sha}/${path}`;
 }
