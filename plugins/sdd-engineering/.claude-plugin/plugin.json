@@ -1,0 +1,25 @@
+{
+  "name": "sdd-engineering",
+  "version": "1.0.0",
+  "description": "Spec-driven development chain: spec-creator, planner, implementer, test-writer, verifier and doc-writer agents, plus the run-plan and workflow-retro skills",
+  "author": {
+    "name": "Iurii Razubaiev",
+    "url": "https://github.com/yrazub"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/yrazub/gen-bin",
+  "dependencies": [
+    {
+      "name": "engineering-paved-path",
+      "version": "^1.0.0"
+    },
+    {
+      "name": "research-tools",
+      "version": "^1.0.0"
+    },
+    {
+      "name": "architecture-review",
+      "version": "^1.0.0"
+    }
+  ]
+}

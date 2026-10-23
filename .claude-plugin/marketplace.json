@@ -6,5 +6,26 @@
     "name": "Iurii Razubaiev",
     "url": "https://github.com/yrazub"
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "engineering-paved-path",
+      "source": "./plugins/engineering-paved-path",
+      "description": "Ten engineering skills: React, Next.js, Fastify, Zod, TypeScript, testing, security, onion and frontend UI architecture, Mermaid diagrams"
+    },
+    {
+      "name": "research-tools",
+      "source": "./plugins/research-tools",
+      "description": "Read-only researcher agent for repository and external research before any code is written"
+    },
+    {
+      "name": "architecture-review",
+      "source": "./plugins/architecture-review",
+      "description": "Read-only architecture-reviewer agent that checks a change against layer and dependency-direction rules"
+    },
+    {
+      "name": "sdd-engineering",
+      "source": "./plugins/sdd-engineering",
+      "description": "Spec-driven development chain: spec-creator, planner, implementer, test-writer, verifier and doc-writer agents, plus the run-plan and workflow-retro skills"
+    }
+  ]
 }
