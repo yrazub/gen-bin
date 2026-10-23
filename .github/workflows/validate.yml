@@ -25,17 +25,23 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install --global @anthropic-ai/claude-code@2.1.306
 
-      # TODO: add --strict once the first plugin is published; with an empty catalog the
-      # "Marketplace has no plugins defined" warning would fail every run.
       - name: Validate catalog
-        run: claude plugin validate .
+        run: claude plugin validate . --strict
 
       - name: Validate each plugin
         run: |
           shopt -s nullglob
           for dir in plugins/*/; do
-            claude plugin validate "$dir"
+            claude plugin validate "$dir" --strict
           done
+
+      - name: Check plugin content
+        run: |
+          node .github/scripts/check-no-devdigest.mjs
+          node .github/scripts/check-namespaces.mjs
+
+      - name: Test plugin scripts
+        run: node --test "plugins/sdd-engineering/scripts/test/"*.test.mjs
 
       - name: Check version bumps
         env:

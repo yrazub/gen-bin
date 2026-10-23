@@ -1,0 +1,11 @@
+{
+  "name": "engineering-paved-path",
+  "version": "1.0.0",
+  "description": "Ten engineering skills: React, Next.js, Fastify, Zod, TypeScript, testing, security, onion and frontend UI architecture, Mermaid diagrams",
+  "author": {
+    "name": "Iurii Razubaiev",
+    "url": "https://github.com/yrazub"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/yrazub/gen-bin"
+}

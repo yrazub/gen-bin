@@ -47,7 +47,10 @@ running session.
 
 | Plugin | What it adds | Version |
 |---|---|---|
-| — | No plugins published yet | — |
+| [`sdd-engineering`](plugins/sdd-engineering/) | Spec-driven chain: six agents (spec, plan, implement, test, verify, document), `run-plan`, `workflow-retro`; pulls in the three below | 1.0.0 |
+| [`engineering-paved-path`](plugins/engineering-paved-path/) | Ten skills: React, Next.js, Fastify, Zod, TypeScript, testing, security, onion and frontend architecture, Mermaid | 1.0.0 |
+| [`research-tools`](plugins/research-tools/) | Read-only `researcher` agent for repository and external research | 1.0.0 |
+| [`architecture-review`](plugins/architecture-review/) | Read-only `architecture-reviewer` agent; uses `engineering-paved-path` | 1.0.0 |
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes.
 

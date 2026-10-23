@@ -1,0 +1,17 @@
+{
+  "name": "architecture-review",
+  "version": "1.0.0",
+  "description": "Read-only architecture-reviewer agent that checks a change against layer and dependency-direction rules",
+  "author": {
+    "name": "Iurii Razubaiev",
+    "url": "https://github.com/yrazub"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/yrazub/gen-bin",
+  "dependencies": [
+    {
+      "name": "engineering-paved-path",
+      "version": "^1.0.0"
+    }
+  ]
+}

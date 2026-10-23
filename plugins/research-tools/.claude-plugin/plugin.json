@@ -1,0 +1,11 @@
+{
+  "name": "research-tools",
+  "version": "1.0.0",
+  "description": "Read-only researcher agent for repository and external research before any code is written",
+  "author": {
+    "name": "Iurii Razubaiev",
+    "url": "https://github.com/yrazub"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/yrazub/gen-bin"
+}
