@@ -73,7 +73,7 @@ once and blocks nothing.
 
 ## Not included
 
-- **No push gate and no self-review skill.** DevDigest's `pr-self-review` is project-specific. The
+- **No push gate and no self-review skill.** The `pr-self-review` skill of the project these plugins were extracted from is project-specific. The
   last steps of `run-plan` run your own review if you have one, and are marked skipped otherwise.
   It never pushes; pushing is yours.
 - **No insights skill.** The step that records findings in a notes file runs only if the project
