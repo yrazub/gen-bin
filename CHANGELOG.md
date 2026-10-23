@@ -14,6 +14,7 @@ that name the skills and agents affected. Newest first.
 - Hook `PreToolUse` on `Write|Edit` that confines `spec-creator` to Markdown files in a `specs`
   folder; it does nothing for any other agent or the main session.
 - Scripts in `scripts/`: `plan-phase.mjs`, `state.mjs`, `specs-only-guard.mjs`, with tests.
+- README with the dependency graph, the chain and its handovers, the hook and the limits.
 - Defaults: specs in `docs/specs/`, plans in `docs/plans/`, run state in `.sdd/<feature>/`
   (`SDD_STATE_DIR` overrides it).
 
