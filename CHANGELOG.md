@@ -13,13 +13,15 @@ that name the skills and agents affected. Newest first.
 
 ### New
 
-- Initial release; components are listed as they land.
+- Agent `architecture-reviewer`: read-only review of a change or a module against the layer and import rules of `engineering-paved-path:onion-architecture` and `engineering-paved-path:frontend-ui-architecture`.
+- README.
 
 ## research-tools 1.0.0
 
 ### New
 
-- Initial release; components are listed as they land.
+- Agent `researcher`: read-only repository and external research with a structured report.
+- README.
 
 ## engineering-paved-path 1.0.0
 
