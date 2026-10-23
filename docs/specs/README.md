@@ -8,3 +8,5 @@ Implementation plans live in [`../plans/`](../plans/), designs in [`../design/`]
 |---|---|
 | [`catalog-site.md`](catalog-site.md) | implemented |
 | [`../plans/catalog-site.md`](../plans/catalog-site.md) | done |
+| [`sdd-plugins.md`](sdd-plugins.md) | approved |
+| [`../plans/sdd-plugins.md`](../plans/sdd-plugins.md) | approved |
