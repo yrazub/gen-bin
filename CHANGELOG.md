@@ -7,7 +7,20 @@ that name the skills and agents affected. Newest first.
 
 ### New
 
-- Initial release; components are listed as they land.
+- Agents: `spec-creator`, `implementation-planner`, `implementer`, `plan-verifier`, `test-writer`,
+  `doc-writer`. Calls between components use namespaced names.
+- Skills: `run-plan` (state-file driven execution of a plan, resumable across chats) and
+  `workflow-retro`.
+- Hook `PreToolUse` on `Write|Edit` that confines `spec-creator` to Markdown files in a `specs`
+  folder; it does nothing for any other agent or the main session.
+- Scripts in `scripts/`: `plan-phase.mjs`, `state.mjs`, `specs-only-guard.mjs`, with tests.
+- Defaults: specs in `docs/specs/`, plans in `docs/plans/`, run state in `.sdd/<feature>/`
+  (`SDD_STATE_DIR` overrides it).
+
+### Known limits
+
+- No push gate and no insights skill: the final steps of `run-plan` use the project's own review
+  and notes when it has them, and are skipped otherwise.
 
 ## architecture-review 1.0.0
 
