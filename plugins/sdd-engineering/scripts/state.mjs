@@ -8,16 +8,18 @@
 //                    [--verify "<result line>"]... [--deviation "<text>"]... [--commit <sha>] [--reason "<text>"]
 //   state.mjs gate   <plan> <n> <pass|skipped> [--note "<text>"]
 //   state.mjs note   <plan> <insight|reviewer> "<text>"
-//   state.mjs final  <plan> <verify|arch|docs|e2e|insights|self-review> <pending|pass|fail|skipped|done> [--note "<text>"]
+//   state.mjs final  <plan> <verify|arch|spec|docs|e2e|insights|self-review> <pending|pass|fail|skipped|done> [--note "<text>"]
 //
 // State lives in .sdd/<feature>/state.json (git-ignored; SDD_STATE_DIR replaces `.sdd`). Every command prints the
 // summary and a NEXT line saying what the main session does next.
-import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { featureOf, parsePlan, phaseBody, planHash, sddDir, REPO_ROOT } from './lib/plan.mjs';
 
 const PHASE_STATUS = ['pending', 'code-done', 'green', 'committed', 'blocked'];
-const FINAL_STEPS = ['verify', 'arch', 'docs', 'e2e', 'insights', 'self-review'];
+const FINAL_STEPS = ['verify', 'arch', 'spec', 'docs', 'e2e', 'insights', 'self-review'];
 const FINAL_STATUS = ['pending', 'pass', 'fail', 'skipped', 'done'];
 const GATE_STATUS = ['pass', 'skipped'];
 // The early architecture check covers source code: a file-table row whose path is not documentation
@@ -25,6 +27,7 @@ const GATE_STATUS = ['pass', 'skipped'];
 // that hold the code are the first path segments of those rows.
 const NOT_CODE = /(\.md$)|^(docs|specs|plans|\.sdd)\//;
 const CODE = 'code';
+const SPEC_DONE = /^[*_]*Status[*_]*:[*_\s]*done\b/im;
 
 export class UsageError extends Error {}
 
@@ -66,7 +69,14 @@ const stateFile = (feature, root) => path.join(sddDir(feature, root), 'state.jso
 function load(plan, root) {
   const file = stateFile(plan.feature, root);
   if (!existsSync(file)) throw new UsageError(`No state for ${plan.feature}. Run: state.mjs start ${rel(plan.abs, root)}`);
-  return JSON.parse(readFileSync(file, 'utf8'));
+  return upgrade(JSON.parse(readFileSync(file, 'utf8')), plan);
+}
+
+/** A state written by an older version lacks the newer final steps and the spec path; they start pending. */
+function upgrade(state, plan) {
+  for (const s of FINAL_STEPS) state.final[s] ??= { status: 'pending', note: null };
+  if (state.spec === undefined) state.spec = plan.parsed.spec;
+  return state;
 }
 
 function save(state, root) {
@@ -105,6 +115,41 @@ function gateAreas(state, phase) {
   return (phase.areas ?? []).filter((a) => original.filter((p) => (p.areas ?? []).includes(a)).at(-1) === phase);
 }
 
+const codeDirs = (state) => [...new Set(state.phases.flatMap((p) => p.code_dirs ?? []))];
+
+// A hash of the code as the architecture check saw it: every tracked or untracked (not ignored) file
+// under the plan's code directories, as it is in the working tree. Content, not git status, so the
+// same code hashes the same before and after its commit. Null when git cannot list the files.
+export function codeFingerprint(dirs, root) {
+  if (!dirs.length) return null;
+  let listed;
+  try {
+    listed = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', ...dirs], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  } catch {
+    return null;
+  }
+  const hash = createHash('sha256');
+  for (const f of [...new Set(listed.split('\0').filter(Boolean))].sort()) {
+    const abs = path.join(root, f);
+    if (!existsSync(abs) || !statSync(abs).isFile()) continue; // deleted in the working tree
+    hash.update(f).update('\0').update(readFileSync(abs)).update('\0');
+  }
+  return hash.digest('hex').slice(0, 16);
+}
+
+// The final architecture review repeats the early check of the last code phase. When that check passed
+// and the code has not changed since, the review would read the same diff again: record it as covered.
+// Only once the final checks have begun, so they still start in a new chat.
+function coverArchByGate(state, root) {
+  const f = state.final;
+  if (f.arch.status !== 'pending' || state.phases.some((p) => p.status !== 'committed')) return null;
+  if (state.chat.committed > 0 && FINAL_STEPS.every((s) => f[s].status === 'pending')) return null;
+  const gated = state.phases.filter((p) => p.gate === 'pass' && p.gate_code).at(-1);
+  if (!gated || gated.gate_code !== codeFingerprint(codeDirs(state), root)) return null;
+  f.arch = { status: 'skipped', note: `covered by the phase ${gated.n} architecture check: the code under ${codeDirs(state).join(' ')} is unchanged since it passed (${gated.gate_code})` };
+  return `Final architecture review skipped: phase ${gated.n}'s check passed on the same code.`;
+}
+
 function start(plan, opts, root) {
   const file = stateFile(plan.feature, root);
   const hash = planHash(plan.text);
@@ -117,6 +162,7 @@ function start(plan, opts, root) {
       plan_sha256: hash,
       mode: plan.parsed.mode ?? 'multi-agent',
       mode_stated: plan.parsed.mode !== null,
+      spec: plan.parsed.spec,
       base: one(opts, 'base') ?? 'origin/main',
       per_chat: perChat,
       chat: { committed: 0 },
@@ -128,7 +174,7 @@ function start(plan, opts, root) {
     save(state, root);
     return { state, message: `Created ${rel(file, root)}.` };
   }
-  const state = JSON.parse(readFileSync(file, 'utf8'));
+  const state = upgrade(JSON.parse(readFileSync(file, 'utf8')), plan);
   let message = 'Resumed; the per-chat phase count starts again at 0.';
   if (state.plan_sha256 !== hash) {
     const before = new Map(state.phases.map((p) => [p.n, p]));
@@ -151,6 +197,7 @@ function start(plan, opts, root) {
     p.areas = areasOf(plan.text, p.n);
     p.code_dirs = [...new Set(codePaths(plan.text, p.n).map(topDir))];
   }
+  state.spec = plan.parsed.spec;
   if (opts['per-chat']) state.per_chat = perChat;
   if (opts.base) state.base = one(opts, 'base');
   state.chat = { committed: 0 };
@@ -178,7 +225,7 @@ function setPhase(state, nArg, status, opts) {
   const wasCommitted = phase.status === 'committed';
   phase.status = status;
   // The check covers the code as it was; new code for the phase needs a new check.
-  if (status === 'pending' || status === 'code-done') phase.gate = null;
+  if (status === 'pending' || status === 'code-done') phase.gate = phase.gate_code = null;
   if (opts.verify) phase.verify = opts.verify;
   if (opts.deviation) phase.deviations.push(...opts.deviation);
   if (opts.commit) phase.commit = one(opts, 'commit');
@@ -194,7 +241,7 @@ function setPhase(state, nArg, status, opts) {
   return message;
 }
 
-function setGate(state, nArg, status, opts) {
+function setGate(state, nArg, status, opts, root) {
   const n = Number(nArg);
   const phase = state.phases.find((p) => p.n === n);
   if (!phase) throw new UsageError(`Phase ${nArg} is not in the plan (phases: ${state.phases.map((p) => p.n).join(', ')}).`);
@@ -203,6 +250,7 @@ function setGate(state, nArg, status, opts) {
   if (phase.status !== 'green') throw new UsageError(`Phase ${n} is ${phase.status}; the architecture check runs once its tests are green.`);
   phase.gate = status;
   phase.gate_note = one(opts, 'note') ?? null;
+  phase.gate_code = status === 'pass' ? codeFingerprint(codeDirs(state), root) : null;
   return `Phase ${n} architecture check → ${status}.`;
 }
 
@@ -210,7 +258,7 @@ function setGate(state, nArg, status, opts) {
 function gateNext(state, phase) {
   const due = gateAreas(state, phase);
   if (!due.length || phase.gate) return null;
-  const dirs = [...new Set(state.phases.flatMap((p) => p.code_dirs ?? []))].join(' ');
+  const dirs = codeDirs(state).join(' ');
   const optional = state.mode === 'single-agent' ? ' In single-agent mode it is optional: ask the user, and record a declined one with state.mjs gate … skipped.' : '';
   return `Before the commit, run architecture-review:architecture-reviewer, mode change, on the ${due.join(' and ')} so far — phase ${phase.n} is the last phase that touches it: the file list from git diff --name-status ${state.base} -- ${dirs} plus the untracked files there, and that diff as a patch in ${process.env.SDD_STATE_DIR || '.sdd'}/${state.feature}/. CRITICAL or WARNING findings go back to sdd-engineering:implementer for phase ${phase.n}, then sdd-engineering:test-writer, then this check again. Clean: state.mjs gate ${state.plan} ${phase.n} pass.${optional}`;
 }
@@ -222,11 +270,16 @@ function addNote(state, kind, text) {
   return `Note added (${kind}).`;
 }
 
-function setFinal(state, step, status, opts) {
+function setFinal(state, step, status, opts, root) {
   if (!FINAL_STEPS.includes(step)) throw new UsageError(`Final step must be one of ${FINAL_STEPS.join(', ')}.`);
   if (!FINAL_STATUS.includes(status)) throw new UsageError(`Final status must be one of ${FINAL_STATUS.join(', ')}.`);
   const open = state.phases.filter((p) => p.status !== 'committed').map((p) => p.n);
   if (status !== 'pending' && open.length) throw new UsageError(`Phases ${open.join(', ')} are not committed; the final checks come after the last phase.`);
+  if (step === 'spec' && (status === 'done' || status === 'pass')) {
+    if (!state.spec) throw new UsageError('The plan names no spec; record the step as skipped.');
+    const abs = path.resolve(root, state.spec);
+    if (!existsSync(abs) || !SPEC_DONE.test(readFileSync(abs, 'utf8'))) throw new UsageError(`${state.spec} does not say "Status: done" yet; set it and commit it first.`);
+  }
   state.final[step] = { status, note: one(opts, 'note') ?? null };
   return `Final step ${step} → ${status}.`;
 }
@@ -277,6 +330,10 @@ export function nextAction(state) {
     const who = checks.map((s) => (s === 'verify' ? 'sdd-engineering:plan-verifier' : 'architecture-review:architecture-reviewer')).join(' and ');
     const optional = state.mode === 'single-agent' ? ' In single-agent mode both are optional: ask the user, and mark a skipped one with state.mjs final … skipped.' : '';
     return `Run ${who}${checks.length === 2 ? ' in parallel' : ''}: plan ${plan}, base ${state.base}; give plan-verifier the declared deviations (state.mjs show ${plan} --notes).${optional}`;
+  }
+  if (f.spec.status === 'pending') {
+    if (!state.spec) return `The plan names no spec (a bug or technical change): state.mjs final ${plan} spec skipped.`;
+    return `The plan is verified: set the Status line of ${state.spec} (and of each module spec of this feature that has one) to done with today's date, commit it ("docs(specs): mark ${state.feature} done"), then: state.mjs final ${plan} spec done.`;
   }
   if (f.docs.status === 'pending') return `Run sdd-engineering:doc-writer with plan ${plan} and the changed-file list (git diff --name-status against ${state.base}), or mark docs skipped when nothing documented changed.`;
   if (f.e2e.status === 'pending') return "Run the project's end-to-end suite if it has one, then mark this step pass or fail; mark it skipped when there is none.";
@@ -332,7 +389,7 @@ export function run(argv, root = REPO_ROOT) {
       break;
     case 'gate':
       state = load(plan, root);
-      message = setGate(state, pos[1], pos[2], opts);
+      message = setGate(state, pos[1], pos[2], opts, root);
       save(state, root);
       break;
     case 'note':
@@ -342,13 +399,15 @@ export function run(argv, root = REPO_ROOT) {
       break;
     case 'final':
       state = load(plan, root);
-      message = setFinal(state, pos[1], pos[2], opts);
+      message = setFinal(state, pos[1], pos[2], opts, root);
       save(state, root);
       break;
     default:
       throw new UsageError('Command must be start, show, phase, gate, note or final.');
   }
-  return [message, summary(state, { notes: Boolean(opts.notes) })].filter(Boolean).join('\n');
+  const covered = coverArchByGate(state, root);
+  if (covered) save(state, root);
+  return [message, covered, summary(state, { notes: Boolean(opts.notes) })].filter(Boolean).join('\n');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

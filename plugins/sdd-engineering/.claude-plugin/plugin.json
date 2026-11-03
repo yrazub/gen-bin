@@ -1,6 +1,6 @@
 {
   "name": "sdd-engineering",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Spec-driven development chain: spec-creator, planner, implementer, test-writer, verifier and doc-writer agents, plus the run-plan and workflow-retro skills",
   "author": {
     "name": "Iurii Razubaiev",

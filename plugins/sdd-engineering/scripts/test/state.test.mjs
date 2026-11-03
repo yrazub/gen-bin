@@ -68,7 +68,8 @@ test('after the last phase: verifier and reviewer in parallel, then docs, e2e, i
   cli('start', PLAN); // the final checks run in a new chat
   assert.match(next(cli('show', PLAN)), /Run sdd-engineering:plan-verifier and architecture-review:architecture-reviewer in parallel: plan .*, base origin\/main/);
   cli('final', PLAN, 'verify', 'pass');
-  assert.match(next(cli('final', PLAN, 'arch', 'pass')), /Run sdd-engineering:doc-writer/);
+  assert.match(next(cli('final', PLAN, 'arch', 'pass')), /The plan names no spec \(a bug or technical change\): state\.mjs final .* spec skipped\./);
+  assert.match(next(cli('final', PLAN, 'spec', 'skipped')), /Run sdd-engineering:doc-writer/);
   assert.match(next(cli('final', PLAN, 'docs', 'skipped', '--note', 'nothing documented changed')), /end-to-end suite/);
   assert.match(next(cli('final', PLAN, 'e2e', 'pass')), /notes file or skill/);
   assert.match(next(cli('final', PLAN, 'insights', 'done')), /project's own review/);
@@ -189,6 +190,78 @@ test('single-agent mode: the early check is optional', () => {
   cli('phase', PLAN, '1', 'committed', '--commit', 'c1');
   assert.match(next(cli('phase', PLAN, '2', 'green')), /In single-agent mode it is optional: .*state\.mjs gate … skipped\.$/);
   assert.match(next(cli('gate', PLAN, '2', 'skipped', '--note', 'user declined')), /^NEXT: Commit phase 2 \(code and tests\)/);
+});
+
+// A git repository holding the code of areaPlan, so the architecture check can fingerprint it.
+const git = (...args) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false', ...args], { cwd: root, stdio: 'pipe' });
+const writeCode = (file, text) => {
+  mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+  writeFileSync(path.join(root, file), text);
+};
+function gatedRun() {
+  git('init', '-q');
+  write(areaPlan());
+  writeCode('src/shared/x.ts', 'export const x = 1;\n');
+  git('add', '-A');
+  git('commit', '-qm', 'base');
+  cli('start', PLAN, '--per-chat', '9');
+  cli('phase', PLAN, '1', 'committed', '--commit', 'c1');
+  writeCode('src/modules/a/service.ts', 'export const s = 1;\n'); // still untracked when the check runs
+  writeCode('lib/b.ts', 'export const b = 1;\n');
+  cli('phase', PLAN, '2', 'green');
+  cli('gate', PLAN, '2', 'pass');
+  git('add', '-A');
+  git('commit', '-qm', 'phase 2');
+  for (const n of ['2', '3', '4']) cli('phase', PLAN, n, 'committed', '--commit', `c${n}`);
+}
+
+test('the final architecture review is skipped when the early check passed on the same code', () => {
+  gatedRun();
+  writeCode('docs/guide.md', '# Guide\n'); // documentation is not code
+  assert.match(next(cli('show', PLAN)), /^NEXT: CHECKPOINT — all phases are committed/);
+  assert.equal(state().final.arch.status, 'pending');
+  const out = cli('start', PLAN); // the new chat for the final checks
+  assert.match(out, /Final architecture review skipped: phase 2's check passed on the same code\./);
+  assert.equal(next(out), `NEXT: Run sdd-engineering:plan-verifier: plan ${PLAN}, base origin/main; give plan-verifier the declared deviations (state.mjs show ${PLAN} --notes).`);
+  assert.match(state().final.arch.note, /^covered by the phase 2 architecture check: the code under src lib is unchanged/);
+});
+
+test('the final architecture review runs when the code changed after the early check', () => {
+  gatedRun();
+  writeCode('lib/b.ts', 'export const b = 2;\n');
+  assert.match(next(cli('start', PLAN)), /Run sdd-engineering:plan-verifier and architecture-review:architecture-reviewer in parallel/);
+  assert.equal(state().final.arch.status, 'pending');
+});
+
+test('after the checks pass, the spec the plan names is marked done before the docs', () => {
+  write(planText('multi-agent', phases('Only')).replace('**Goal:** g', '**Goal:** g · **Spec:** `docs/specs/demo.md`, SPEC-1'));
+  mkdirSync(path.join(root, 'docs/specs'), { recursive: true });
+  const spec = (status) => writeFileSync(path.join(root, 'docs/specs/demo.md'), `# Spec: demo\nSpec ID: SPEC-1\nStatus: ${status}\n`);
+  spec('approved (2026-11-03)');
+  cli('start', PLAN);
+  cli('phase', PLAN, '1', 'committed', '--commit', 'c1');
+  cli('start', PLAN);
+  cli('final', PLAN, 'verify', 'pass');
+  assert.equal(
+    next(cli('final', PLAN, 'arch', 'pass')),
+    `NEXT: The plan is verified: set the Status line of docs/specs/demo.md (and of each module spec of this feature that has one) to done with today's date, commit it ("docs(specs): mark demo done"), then: state.mjs final ${PLAN} spec done.`,
+  );
+  assert.throws(() => cli('final', PLAN, 'spec', 'done'), /docs\/specs\/demo\.md does not say "Status: done" yet/);
+  spec('done (2026-11-04)');
+  assert.match(next(cli('final', PLAN, 'spec', 'done')), /Run sdd-engineering:doc-writer/);
+});
+
+test('a state written before the spec step resumes with that step pending', () => {
+  cli('start', PLAN, '--per-chat', '9');
+  for (const n of ['1', '2', '3']) cli('phase', PLAN, n, 'committed', '--commit', `c${n}`);
+  const old = state();
+  delete old.final.spec;
+  delete old.spec;
+  writeFileSync(path.join(root, '.sdd/demo/state.json'), JSON.stringify(old));
+  cli('start', PLAN);
+  cli('final', PLAN, 'verify', 'pass');
+  assert.match(next(cli('final', PLAN, 'arch', 'pass')), /The plan names no spec/);
+  assert.equal(state().final.spec.status, 'pending');
 });
 
 test('a plan without an execution mode line defaults to multi-agent and says so', () => {

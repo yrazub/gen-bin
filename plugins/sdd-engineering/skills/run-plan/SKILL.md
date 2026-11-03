@@ -1,8 +1,8 @@
 ---
 name: run-plan
-description: "Executes an approved Implementation Plan with the sdd-engineering agents — implementer and test-writer phase by phase, then plan-verifier and architecture-reviewer, doc-writer, the project's end-to-end run, its insights notes and its own review — keeping the progress in a state file (.sdd/<feature>/state.json) so a fresh chat resumes where the last one stopped. Works in multi-agent or single-agent mode as the plan says. Use when the user runs /sdd-engineering:run-plan <plan>, or asks to build, execute, continue or resume an approved plan. Does not write specs or plans, and never pushes."
+description: "Executes an approved Implementation Plan with the sdd-engineering agents — implementer and test-writer phase by phase, then plan-verifier and architecture-reviewer, marking the spec done, doc-writer, the project's end-to-end run, its insights notes and its own review — keeping the progress in a state file (.sdd/<feature>/state.json) so a fresh chat resumes where the last one stopped. Works in multi-agent or single-agent mode as the plan says. Use when the user runs /sdd-engineering:run-plan <plan>, or asks to build, execute, continue or resume an approved plan. Does not write specs or plans, and never pushes."
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Run a plan
@@ -101,6 +101,8 @@ that code against the base, as `NEXT` says. A CRITICAL or WARNING finding goes b
 records that as a deviation — then `sdd-engineering:test-writer`, then the check again. Clean →
 `$S gate <plan> <n> pass`. This is where layer and placement mistakes are cheap; found only in the
 final review they cost amend rounds. Phases added by an amendment have no such check; the final checks run right after them.
+A passed check records a hash of the code; if the code is unchanged when the final checks begin,
+`$S` records the final `arch` step as covered and `NEXT` asks only for the verifier.
 
 **commit** — stage the files both reports list, commit them together, record the commit:
 
@@ -121,7 +123,8 @@ one with `$S gate <plan> <n> skipped`.
 
 Follow `NEXT` in this order; record each with `$S final <plan> <step> <status> [--note "…"]`.
 
-1. **`verify` and `arch` in parallel.** Give `sdd-engineering:plan-verifier` the plan path, the base and the
+1. **`verify` and `arch` in parallel** — or `verify` alone when `NEXT` says the early check already
+   covers `arch`. Give `sdd-engineering:plan-verifier` the plan path, the base and the
    declared deviations from `$S show <plan> --notes`. Give `architecture-review:architecture-reviewer` mode `change`,
    the changed-file list (`git diff --name-status <base>...HEAD`) and a patch written to
    `.sdd/<feature>/change.patch` (`git diff <merge-base> > …`). PASS / no CRITICAL or
@@ -135,15 +138,19 @@ Follow `NEXT` in this order; record each with `$S final <plan> <step> <status> [
    edit, insert the New phase after the last phase and before `## Out of scope`, commit the plan,
    and run `$S start <plan> --accept-plan-change`: the new phase comes up as the next step and
    every final check starts again.
-2. **`docs`** — `sdd-engineering:doc-writer` with the plan path and the changed-file list; apply its "For the main
+2. **`spec`** — once both checks pass, the work is verified against the spec: set the `Status:` line
+   of the spec the plan names (and of each module spec of the feature that has one) to
+   `done (<date>)`, commit it, then `$S final <plan> spec done`. The script refuses `done` until
+   the spec says so. A plan that names no spec (a bug or technical change) records `skipped`.
+3. **`docs`** — `sdd-engineering:doc-writer` with the plan path and the changed-file list; apply its "For the main
    session" items. `skipped` when nothing documented changed.
-3. **`e2e`** — the project's end-to-end suite, if it has one (find its command in the plan's Verify
+4. **`e2e`** — the project's end-to-end suite, if it has one (find its command in the plan's Verify
    lines or the project docs; ask the user to stop a dev server if the suite needs the port).
    `pass` only on a full pass; `skipped` when there is none.
-4. **`insights`** — if the project has a notes file or a skill for recurring findings, record the
+5. **`insights`** — if the project has a notes file or a skill for recurring findings, record the
    insight candidates (`$S show <plan> --notes`) there and commit what is left, then `done`;
    otherwise `skipped`. This plugin ships no insights skill.
-5. **`self-review`** — the project's own review, if it has one (a review skill, a checklist, a
+6. **`self-review`** — the project's own review, if it has one (a review skill, a checklist, a
    CI-equivalent command). `pass` only on a pass verdict; `skipped` when there is none. This plugin
    ships no push gate: never push without the user's say.
 
@@ -158,12 +165,13 @@ When `NEXT` says all steps are done, report to the user and ask before any push 
 | `$S phase <plan> <n> <pending\|code-done\|green\|committed\|blocked> [--verify …] [--deviation …] [--commit <sha>] [--reason …]` | record a phase |
 | `$S gate <plan> <n> <pass\|skipped> [--note …]` | record the architecture check of a green phase that owes one |
 | `$S note <plan> <insight\|reviewer> "<text>"` | record a note |
-| `$S final <plan> <verify\|arch\|docs\|e2e\|insights\|self-review> <pending\|pass\|fail\|skipped\|done> [--note …]` | record a final step |
+| `$S final <plan> <verify\|arch\|spec\|docs\|e2e\|insights\|self-review> <pending\|pass\|fail\|skipped\|done> [--note …]` | record a final step |
 
 The rules the script enforces: phases close in order; `committed` needs `--commit`, `blocked`
 needs `--reason`; the last original phase that touches source code (read from the file table)
 needs its architecture check recorded before `committed`, and new code for it (`code-done`)
-clears that record; final steps wait for the last phase; a phase committed after the final checks
+clears that record; a passed check on unchanged code covers the final `arch` step; `spec done`
+needs the spec's `Status:` to say done; final steps wait for the last phase; a phase committed after the final checks
 started resets them; a plan that changed is refused until accepted, and a phase with recorded
 work cannot disappear from it. Tests:
 `node --test "${CLAUDE_PLUGIN_ROOT}/scripts/test/"*.test.mjs`.

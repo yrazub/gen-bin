@@ -3,6 +3,24 @@
 Each release adds a `## <plugin> X.Y.Z` heading with New / Changed / Fixed sections
 that name the skills and agents affected. Newest first.
 
+## sdd-engineering 1.1.0
+
+### Changed
+
+- `run-plan`: the final architecture review is skipped when the early architecture check of the
+  last code phase passed and the code has not changed since. `state.mjs gate … pass` records a
+  hash of the files under the plan's code directories; when the final checks begin on the same
+  hash, the `arch` step is recorded as `skipped` with the reason, and `NEXT` asks only for
+  `plan-verifier`. Changed code (a fix phase, a later edit) still gets the full review.
+
+### Fixed
+
+- `run-plan`: a verified feature now ends with its spec marked `Status: done`. Nobody owned that
+  step before, so specs stayed `approved`. A new final step `spec` comes after `verify` and `arch`
+  pass: `NEXT` names the spec from the plan's `**Spec:**` line, and `state.mjs final … spec done`
+  is refused until the spec says `done`. A plan without a spec records the step as `skipped`.
+  State files written by 1.0.0 resume with the step pending.
+
 ## sdd-engineering 1.0.0
 
 ### New
