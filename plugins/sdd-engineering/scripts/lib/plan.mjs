@@ -42,7 +42,9 @@ export function parsePlan(text) {
   });
   const title = (lines.find((l) => /^# /.test(l)) ?? '').replace(/^# /, '').trim();
   const mode = text.match(/\*\*Execution mode:\*\*\s*(multi-agent|single-agent)/)?.[1] ?? null;
-  return { title, mode, phases, tagged };
+  // The header names the spec as `**Spec:** \`<path>\`, <Spec ID> …`; a bug or technical change names none.
+  const spec = text.match(/\*\*Spec:\*\*\s*`([^`]+\.md)`/)?.[1] ?? null;
+  return { title, mode, spec, phases, tagged };
 }
 
 /** The plan without the other phases: every `##` section is kept, only `## Phases` is narrowed to phase n. */
