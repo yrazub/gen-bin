@@ -121,8 +121,9 @@ blocked at review, so resolve that now.
 These come from the `CLAUDE.md` files; the plan must be consistent with them:
 
 - A shape that crosses the API boundary is defined once, in the project's shared-contract
-  location, and any copy elsewhere is synced from it. Contract changes are their own phase and
-  come first.
+  location, and any copy elsewhere is synced from it. Contract changes come first: in the first
+  phase that uses them, or in a phase of their own only when several packages consume the
+  contract or a synced copy has to change with it.
 - Schema changes go through the project's migration generator. The plan never lists a hand edit
   to generated migrations, to a lock file or to a vendored copy (the synced copy of a contract
   file is the one exception, and the plan says it is a copy).
@@ -261,7 +262,17 @@ before `## Out of scope`>
 - **Decide what can be decided.** Where the code and the documents settle a choice, make it and
   give the reason. Leave a question open only when it needs a person: a product decision, a
   new dependency, a trade-off the documents do not settle.
-- **Keep phases small.** A phase that touches more than about a dozen files is two phases.
+- **Use as few phases as the work allows.** Every phase costs a fresh `sdd-engineering:implementer`
+  and `sdd-engineering:test-writer` run that re-reads the context and re-runs the suites, plus
+  orchestrator turns, so a needless split costs more than it saves.
+  - Merge adjacent steps into one phase while it stays within about 8 files of the file table,
+    in one package.
+  - Split when a phase would pass about 10 files, span packages, hold a database migration, or
+    when a risky change to a core path should be green before other code builds on it.
+  - Never plan a phase that only adds a type, a contract or wiring of fewer than about 3 files;
+    put it in the phase that first uses it.
+  - One phase is right only for a small change: about 8 files or fewer, one package, no
+    migration.
 - **Stay in scope.** Do not plan refactors, cleanups or tests the request does not need. Name
   what you deliberately left out under Out of scope, so the `sdd-engineering:implementer` does not add it.
 
@@ -281,7 +292,8 @@ so write each as one statement that can be checked against the code.
 
 **Goal:** <one or two sentences> · **Packages:** <package, package, …> ·
 **Spec:** <path and Spec ID, or "bug" / "technical change"> · **Execution mode:** multi-agent | single-agent ·
-**Review answers:** <Q1 → …, R2 accepted (spec updated) …, or "none"> · **Assumptions:** <any, or "none">
+**Review answers:** <Q1 → …, R2 accepted (spec updated) …, or "none"> · **Assumptions:** <any, or "none"> ·
+**Phases:** <n> — <why this many, by the rule above>
 
 ## Context read
 | Document | What it settles for this plan |
