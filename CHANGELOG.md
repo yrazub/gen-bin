@@ -3,6 +3,16 @@
 Each release adds a `## <plugin> X.Y.Z` heading with New / Changed / Fixed sections
 that name the skills and agents affected. Newest first.
 
+## sdd-engineering 1.1.1
+
+### Fixed
+
+- `implementation-planner` split work into more phases than it needed: a contract always got its
+  own phase, and only an upper bound limited phase size. In two runs of the same feature it
+  planned 3 and 5 phases, and each extra phase costs a fresh implementer and test-writer run. The
+  planner now uses as few phases as the criteria allow, puts a single-package contract into the
+  phase that first uses it, and states the reason for the phase count in the plan header.
+
 ## sdd-engineering 1.1.0
 
 ### Changed
