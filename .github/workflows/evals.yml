@@ -1,0 +1,61 @@
+name: Evals
+
+# Behaviour evals of sdd-engineering (evals/README.md). They call a model, so they run only when a
+# plugin or the evals change, and on demand. Not a required check: the path filter would leave it
+# waiting on PRs that touch neither.
+#
+# The model goes through OpenRouter's Anthropic-compatible endpoint, like the DevDigest evals:
+# secret OPENROUTER_API_KEY, repository variable EVAL_MODEL (default Haiku). A fork PR gets no
+# secret, so the job is skipped there.
+on:
+  pull_request:
+    paths:
+      - 'plugins/**'
+      - 'evals/**'
+      - '.github/workflows/evals.yml'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Test the plugins at this tag or commit (empty = the checked-out tree), e.g. sdd-engineering--v1.0.0'
+        required: false
+        default: ''
+      model:
+        description: 'OpenRouter model slug (empty = EVAL_MODEL variable, else Haiku)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ANTHROPIC_BASE_URL: https://openrouter.ai/api
+      ANTHROPIC_AUTH_TOKEN: ${{ secrets.OPENROUTER_API_KEY }}
+      ANTHROPIC_API_KEY: ''
+      EVAL_MODEL: ${{ inputs.model || vars.EVAL_MODEL || 'anthropic/claude-haiku-4.5' }}
+      # Claude Code's background calls use the Haiku alias; OpenRouter needs its own slug for it.
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: ${{ inputs.model || vars.EVAL_MODEL || 'anthropic/claude-haiku-4.5' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # --ref reads release tags
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install Claude Code CLI
+        run: npm install --global @anthropic-ai/claude-code@2.1.306
+
+      - name: Run evals
+        env:
+          REF: ${{ inputs.ref }}
+        run: node evals/run.mjs ${REF:+--ref "$REF"}
